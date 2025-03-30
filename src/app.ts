@@ -5,6 +5,7 @@ import cors from "cors";
 import generateScript from "./routes/beta/generate-script";
 import fetchVideosBeta from "./routes/beta/fetch-videos";
 import mergeVideosRouteBeta from "./routes/beta/merge-videos";
+import mergeVideosOptimizedRouteBeta from "./routes/beta/merge-videos-optimized";
 import getMusicFilesRoute from "./routes/beta/get-music-files";
 import generateVideoMetadata from "./routes/beta/video-metadata";
 import trendingTopicsRoute from "./routes/ai/trending-topics";
@@ -44,6 +45,7 @@ app.use("/api/cleanup-generator", cleanupRouteGen);
 app.use("/api/beta/generate-script", generateScript);
 app.use("/api/beta/fetch-videos", fetchVideosBeta);
 app.use("/api/beta/merge-videos", mergeVideosRouteBeta);
+app.use("/api/beta/merge-videos-optimized", mergeVideosOptimizedRouteBeta);
 app.use("/api/beta/get-music-files", getMusicFilesRoute);
 app.use("/api/beta/video-metadata", generateVideoMetadata);
 

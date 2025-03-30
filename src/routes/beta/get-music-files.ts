@@ -21,8 +21,6 @@ router.get("/", async (_req: Request, res: Response): Promise<void> => {
       url: `/music/${file}`, // This matches the static serving path
     }));
 
-    console.log("🎵 Found music files:", musicFiles.map(f => f.name));
-
     res.status(200).json({ files: musicFiles });
   } catch (error) {
     console.error("❌ Error reading music files:", error);
