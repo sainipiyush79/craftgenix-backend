@@ -30,7 +30,16 @@ import cleanupRouteGen from "./routes/cleanup-generator";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Allow origin from instantrix.com
+app.use(
+  cors({
+    origin: "https://www.instantrix.com", // or use a list for multiple domains
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 //main
