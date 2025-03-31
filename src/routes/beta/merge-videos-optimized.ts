@@ -28,9 +28,11 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const { fields } = await parseForm(req);
     const selectedVideos = JSON.parse(fields.videoUrls[0]);
-    const musicFileName = Array.isArray(fields.musicFileName)
-      ? fields.musicFileName[0]
-      : fields.musicFileName;
+
+ const musicFileUrl = Array.isArray(fields.musicFileUrl)
+  ? fields.musicFileUrl[0]
+  : fields.musicFileUrl;
+
 
     if (!selectedVideos.length) {
       res.status(400).json({ error: "No videos selected" });
@@ -38,7 +40,10 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     }
 
     console.log("✅ Processing Videos:", selectedVideos);
-    console.log("✅ Selected Music File:", musicFileName || "No music selected");
+    console.log(
+      "✅ Selected Music File:",
+      musicFileUrl || "No music selected"
+    );
 
     const tempDir = path.resolve("./public/videos/temp");
     const outputDir = path.resolve("./public/videos");
@@ -56,11 +61,13 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     console.log("✅ All videos downloaded!");
 
     let processedVideoPaths: string[] = [];
-let totalDuration = 0; // ✅ Add this line
-
+    let totalDuration = 0; // ✅ Add this line
 
     for (const videoPath of localVideoPaths) {
-      const outputTrimmedPath = path.join(tempDir, `trimmed-${path.basename(videoPath)}`);
+      const outputTrimmedPath = path.join(
+        tempDir,
+        `trimmed-${path.basename(videoPath)}`
+      );
       const duration = await getVideoDuration(videoPath);
 
       let targetDuration = duration < 5 ? duration : 5;
@@ -85,17 +92,53 @@ let totalDuration = 0; // ✅ Add this line
     await mergeVideos(fileListPath, finalMergedVideo);
     console.log("✅ Videos merged successfully!");
 
-    if (musicFileName) {
-      const musicFilePath = path.join("./public/music", musicFileName);
-      const finalWithMusic = path.join(outputDir, "final-with-music.mp4");
+ 
+    // if (musicFileUrl) {
+    //   const downloadedMusicPath = path.resolve(tempDir, "background-music.mp3");
+    //   console.log("🎧 Downloading music...");
+    //   await downloadMusicFile(musicFileUrl, downloadedMusicPath);
+      
 
+    //   if (!fs.existsSync(downloadedMusicPath)) {
+    //     throw new Error("Converted music file was not created");
+    //   }
+
+    //   const finalWithMusic = path.join(outputDir, "final-with-music.mp4");
+    //   console.log("🔄 Adding background music...");
+    //   await addMusicToVideo(finalMergedVideo, downloadedMusicPath, finalWithMusic);
+    //   console.log("✅ Music added successfully!");
+
+    //   res.status(200).json({ final_video_url: `/videos/final-with-music.mp4` });
+    //   return;
+    // }
+
+    if (musicFileUrl) {
+      let musicFilePath = "";
+    
+      if (musicFileUrl.startsWith("/music/")) {
+        // 👉 Fix: Join with actual public path on disk
+        musicFilePath = path.join(__dirname, "../../../public", musicFileUrl); 
+      } else {
+        // Remote Jamendo URL
+        musicFilePath = path.resolve(tempDir, "background-music.mp3");
+        console.log("🎧 Downloading music...");
+        await downloadMusicFile(musicFileUrl, musicFilePath);
+      }
+      
+    
+      if (!fs.existsSync(musicFilePath)) {
+        throw new Error("Music file not found at: " + musicFilePath);
+      }
+    
+      const finalWithMusic = path.join(outputDir, "final-with-music.mp4");
       console.log("🔄 Adding background music...");
       await addMusicToVideo(finalMergedVideo, musicFilePath, finalWithMusic);
       console.log("✅ Music added successfully!");
-
       res.status(200).json({ final_video_url: `/videos/final-with-music.mp4` });
       return;
     }
+    
+
 
     res.status(200).json({ final_video_url: `/videos/final-merged.mp4` });
     return;
@@ -126,28 +169,44 @@ const getVideoDuration = (videoPath: string): Promise<number> => {
   });
 };
 
-const trimAndResizeVideo = (inputPath: string, outputPath: string, duration: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .setDuration(duration) // ✅ Force trim
-        .outputOptions([
-          `-t ${duration}`,        // ✅ Ensure FFmpeg respects limit
-          "-vf scale=720:1280",    // Resize for vertical
-          "-c:v libx264",
-          "-preset ultrafast",
-          "-crf 28",
-          "-threads 1",
-          "-bufsize 500k"
-        ])
-        .output(outputPath)
-        .on("end", () => resolve())
-        .on("error", (err) => reject(err))
-        .run();
-    });
-  };
-  
+const trimAndResizeVideo = (
+  inputPath: string,
+  outputPath: string,
+  duration: number
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .setDuration(duration) // ✅ Force trim
+      // .outputOptions([
+      //   `-t ${duration}`, // ✅ Ensure FFmpeg respects limit
+      //   "-vf scale=720:1280", // Resize for vertical
+      //   "-c:v libx264",
+      //   "-preset ultrafast",
+      //   "-crf 28",
+      //   "-threads 1",
+      //   "-bufsize 500k",
+      // ])
+      .outputOptions([
+        `-t ${duration}`,
+        "-vf scale=1080:1920", // HD vertical
+        "-c:v libx264",
+        "-preset medium",      // Better quality
+        "-crf 21",             // Higher quality
+        "-threads 4",          // Use more cores
+        "-bufsize 2M"          // Bigger buffer
+      ])
+      
+      .output(outputPath)
+      .on("end", () => resolve())
+      .on("error", (err) => reject(err))
+      .run();
+  });
+};
 
-const mergeVideos = (fileListPath: string, outputPath: string): Promise<void> => {
+const mergeVideos = (
+  fileListPath: string,
+  outputPath: string
+): Promise<void> => {
   return new Promise((resolve, reject) => {
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
@@ -162,7 +221,7 @@ const mergeVideos = (fileListPath: string, outputPath: string): Promise<void> =>
         "-preset veryfast",
         "-crf 23",
         "-vf fps=30,format=yuv420p",
-        "-movflags +faststart"
+        "-movflags +faststart",
       ])
       .output(outputPath)
       .on("end", () => resolve())
@@ -171,7 +230,11 @@ const mergeVideos = (fileListPath: string, outputPath: string): Promise<void> =>
   });
 };
 
-const addMusicToVideo = (videoPath: string, audioPath: string, outputPath: string): Promise<void> => {
+const addMusicToVideo = (
+  videoPath: string,
+  audioPath: string,
+  outputPath: string
+): Promise<void> => {
   return new Promise((resolve, reject) => {
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
@@ -189,7 +252,7 @@ const addMusicToVideo = (videoPath: string, audioPath: string, outputPath: strin
         "-c:a aac",
         "-b:a 192k",
         "-shortest",
-        "-movflags +faststart"
+        "-movflags +faststart",
       ])
       .output(outputPath)
       .on("end", () => resolve())
@@ -197,3 +260,14 @@ const addMusicToVideo = (videoPath: string, audioPath: string, outputPath: strin
       .run();
   });
 };
+
+const downloadMusicFile = async (url: string, outputPath: string): Promise<void> => {
+  const response = await axios({ url, responseType: "stream" });
+  const writer = fs.createWriteStream(outputPath);
+  await new Promise<void>((resolve, reject) => {
+    response.data.pipe(writer);
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
+};
+

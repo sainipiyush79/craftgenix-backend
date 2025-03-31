@@ -2,6 +2,11 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 
+
+import jamendoMusic from "./routes/music/free-music";
+import uploadMusicRoute from "./routes/music/upload";
+
+
 import generateScript from "./routes/beta/generate-script";
 import fetchVideosBeta from "./routes/beta/fetch-videos";
 import mergeVideosRouteBeta from "./routes/beta/merge-videos";
@@ -27,18 +32,32 @@ import cleanupRouteGen from "./routes/cleanup-generator";
 
 
 
+
+
 dotenv.config();
 
 const app = express();
 
 // Allow origin from instantrix.com
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://www.instantrix.com"
+];
+
 app.use(
   cors({
-    origin: "https://www.instantrix.com", // or use a list for multiple domains
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 
@@ -65,6 +84,10 @@ app.use("/api/ai/scripts/health-script", healthScript);
 app.use("/api/ai/scripts/science-script", scienceScript);
 app.use("/api/ai/scripts/tech-script", techScript);
 
+
+//music
+app.use("/api/music/free-music", jamendoMusic);
+app.use("/api/music/upload", uploadMusicRoute);
 
 
 
