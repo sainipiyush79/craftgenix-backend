@@ -92,25 +92,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     await mergeVideos(fileListPath, finalMergedVideo);
     console.log("✅ Videos merged successfully!");
 
- 
-    // if (musicFileUrl) {
-    //   const downloadedMusicPath = path.resolve(tempDir, "background-music.mp3");
-    //   console.log("🎧 Downloading music...");
-    //   await downloadMusicFile(musicFileUrl, downloadedMusicPath);
-      
 
-    //   if (!fs.existsSync(downloadedMusicPath)) {
-    //     throw new Error("Converted music file was not created");
-    //   }
-
-    //   const finalWithMusic = path.join(outputDir, "final-with-music.mp4");
-    //   console.log("🔄 Adding background music...");
-    //   await addMusicToVideo(finalMergedVideo, downloadedMusicPath, finalWithMusic);
-    //   console.log("✅ Music added successfully!");
-
-    //   res.status(200).json({ final_video_url: `/videos/final-with-music.mp4` });
-    //   return;
-    // }
 
     if (musicFileUrl) {
       let musicFilePath = "";
@@ -177,15 +159,6 @@ const trimAndResizeVideo = (
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .setDuration(duration) // ✅ Force trim
-      // .outputOptions([
-      //   `-t ${duration}`, // ✅ Ensure FFmpeg respects limit
-      //   "-vf scale=720:1280", // Resize for vertical
-      //   "-c:v libx264",
-      //   "-preset ultrafast",
-      //   "-crf 28",
-      //   "-threads 1",
-      //   "-bufsize 500k",
-      // ])
       .outputOptions([
         `-t ${duration}`,
         "-vf scale=1080:1920", // HD vertical

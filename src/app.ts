@@ -26,6 +26,7 @@ import uploadVideoRoute from "./routes/upload-video";
 import finalMergeRoute from "./routes/final-merge";
 import cleanupRouteRec from "./routes/cleanup-recorder";
 import cleanupRouteGen from "./routes/cleanup-generator";
+import path from "path";
 
 
 
@@ -96,9 +97,21 @@ app.use("/videos", express.static("public/videos/content-recorder"));
 app.use("/music", express.static("public/music"));
 
 
+app.get("/download/:filename", (req, res) => {
+  const filePath = path.join(__dirname, "../public/videos", req.params.filename);
+  res.download(filePath, (err) => {
+    if (err) {
+      console.error("❌ Error sending file:", err);
+      res.status(404).send("File not found");
+    }
+  });
+});
+
+
 
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Backend is running on http://localhost:${PORT}`);
 });
+
